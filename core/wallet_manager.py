@@ -12,35 +12,43 @@ class WalletManager:
 
         self.file = Path(file)
 
-
         self.file.parent.mkdir(
+            parents=True,
             exist_ok=True
         )
 
 
         if not self.file.exists():
 
-            self.save(
-                []
-            )
+            self.save([])
 
 
 
     def load(self):
 
-        with open(
-            self.file,
-            "r",
-            encoding="utf-8"
-        ) as f:
+        try:
 
-            data = json.load(f)
+            with open(
+                self.file,
+                "r",
+                encoding="utf-8"
+            ) as f:
+
+                data = json.load(f)
 
 
-        return data.get(
-            "wallets",
-            []
-        )
+            return data.get(
+                "wallets",
+                []
+            )
+
+
+        except (
+            json.JSONDecodeError,
+            FileNotFoundError
+        ):
+
+            return []
 
 
 
@@ -74,9 +82,23 @@ class WalletManager:
         wallets = self.load()
 
 
+        coin = coin.upper()
+
+
+        for wallet in wallets:
+
+            if (
+                wallet["coin"] == coin
+                and wallet["address"] == address
+            ):
+
+                return False
+
+
+
         wallets.append(
             {
-                "coin": coin.upper(),
+                "coin": coin,
                 "address": address
             }
         )
@@ -85,6 +107,9 @@ class WalletManager:
         self.save(
             wallets
         )
+
+
+        return True
 
 
 
@@ -96,12 +121,40 @@ class WalletManager:
         wallets = self.load()
 
 
-        wallets = [
-            w for w in wallets
-            if w["address"] != address
+        new_wallets = [
+            wallet
+            for wallet in wallets
+            if wallet["address"] != address
         ]
 
 
         self.save(
-            wallets
+            new_wallets
+        )
+
+
+        return len(wallets) != len(new_wallets)
+
+
+
+    def get_wallets_by_coin(
+        self,
+        coin
+    ):
+
+        coin = coin.upper()
+
+
+        return [
+            wallet
+            for wallet in self.load()
+            if wallet["coin"] == coin
+        ]
+
+
+
+    def count(self):
+
+        return len(
+            self.load()
         )
