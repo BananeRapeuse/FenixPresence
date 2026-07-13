@@ -1,12 +1,12 @@
 from pathlib import Path
 import json
+from datetime import datetime, timezone
 
 from pypresence import Presence
 
 from core.formatter import (
     format_hashrate,
     format_coin,
-    format_diff
 )
 
 
@@ -54,13 +54,11 @@ class DiscordRPC:
 
     def connect(self):
 
-
         if not self.client_id:
 
             raise Exception(
                 "Missing Discord client ID in config/config.json"
             )
-
 
 
         self.rpc = Presence(
@@ -69,6 +67,62 @@ class DiscordRPC:
 
 
         self.rpc.connect()
+
+
+
+    def is_recent_block(
+        self,
+        block_time
+    ):
+
+        if not block_time:
+
+            return False
+
+
+        try:
+
+            date = datetime.fromisoformat(
+                block_time.replace(
+                    "Z",
+                    "+00:00"
+                )
+            )
+
+
+            now = datetime.now(
+                timezone.utc
+            )
+
+
+            seconds = (
+                now - date
+            ).total_seconds()
+
+
+            return seconds <= 300
+
+
+        except Exception:
+
+            return False
+
+
+
+    def get_coin_icon(
+        self,
+        miner
+    ):
+
+        if miner.coin_icon:
+
+            return miner.coin_icon
+
+
+        return (
+            miner.coin.lower()
+            + "_x3"
+        )
 
 
 
@@ -84,30 +138,85 @@ class DiscordRPC:
 
 
 
+        coin = miner.coin.upper()
+
+
+
+        hashrate_text = format_hashrate(
+            miner.hashrate
+        )
+
+
+        earned_text = format_coin(
+            miner.lifetime_earned,
+            coin
+        )
+
+
+
+        details = (
+            f"⚡ {hashrate_text}"
+        )
+
+
+
+        state = (
+            f"💰 {earned_text}"
+            f" | "
+            f"🧱 {miner.lifetime_blocks} Blocks"
+        )
+
+
+
+        if self.is_recent_block(
+            miner.last_block_time
+        ):
+
+            state = (
+                f"🎉 Block Found! "
+                f"+{miner.last_block_reward:.8f} {coin}"
+            )
+
+
+
         self.rpc.update(
 
-            details=(
-                f"⚡ "
-                f"{format_hashrate(miner.hashrate)}"
-            ),
+            details=details,
 
 
-            state=(
-                f"💰 "
-                f"{format_coin(miner.lifetime_earned, miner.coin)}"
-                f" | "
-                f"🧱 {miner.lifetime_blocks} Blocks"
-            ),
+            state=state,
 
 
             large_image="fenixpool",
 
 
-            large_text=miner.pool,
+            large_text="FenixPool",
 
 
-            small_text=(
-                f"{len(miner.workers)} workers"
-            )
+            small_image=self.get_coin_icon(
+                miner
+            ),
+
+
+            small_text=f"{coin} Mining",
+
+
+
+            buttons=[
+
+                {
+                    "label": "Open FenixPool",
+                    "url": "https://fenixpool.com"
+                },
+
+                {
+                    "label": "GitHub",
+                    "url": "https://github.com/BananeRapeuse/FenixPresence"
+                }
+
+            ],
+
+
+            instance=False
 
         )

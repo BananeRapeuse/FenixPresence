@@ -117,3 +117,24 @@ def format_workers(workers):
 
 
     return "\n".join(result)
+
+def format_wallet(wallet):
+
+    if not wallet:
+        return "No wallet"
+
+
+    return wallet
+
+
+
+def format_block_reward(value, ticker):
+
+    if value is None or value == 0:
+
+        return None
+
+
+    return (
+        f"+{float(value):.8f} {ticker.upper()}"
+    )
