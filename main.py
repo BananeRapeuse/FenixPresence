@@ -1,12 +1,25 @@
 from pathlib import Path
 import sys
-import time
 
 
-from core.setup import run_first_setup
+from PySide6.QtWidgets import QApplication
+
+
 from core.config import Config
+from gui.app import run_gui
+from core.logger import logger
 
-from src.api.fenix_api import FenixAPI
+
+from core.startup import (
+    enable_startup,
+    is_startup_enabled
+)
+
+
+from core.tray import FenixTray
+from core.engine_worker import EngineWorker
+
+
 from src.discord.rpc import DiscordRPC
 
 
@@ -17,36 +30,11 @@ CONFIG_FILE = Path(
 
 
 
-def print_banner():
-
-    print("=" * 60)
-    print("                Welcome to FenixPresence!")
-    print("=" * 60)
-    print()
-    print("Thank you for using this project.")
-    print()
-    print("Created by Frelon111 for the FenixPool community.")
-    print()
-    print("Need help?")
-    print("• Contact me on Discord")
-    print("• Open an issue on GitHub")
-    print()
-    print("See CONTACTS.md for more information.")
-    print()
-    print("Happy mining! 🔥")
-    print()
-    print("=" * 60)
-    print()
-
-
-
 def should_run_setup():
-
 
     if "--setup" in sys.argv:
 
         return True
-
 
 
     if not CONFIG_FILE.exists():
@@ -54,11 +42,9 @@ def should_run_setup():
         return True
 
 
-
     if CONFIG_FILE.stat().st_size == 0:
 
         return True
-
 
 
     return False
@@ -75,260 +61,160 @@ def load_wallets():
     wallets = config.get_wallets()
 
 
-
-    # Format:
-    # {
-    #   "wallets": {...}
-    # }
-
-    if isinstance(wallets, dict) and "wallets" in wallets:
-
-        wallets = wallets["wallets"]
-
-
-
     result = {}
 
 
-
-    # Format:
-    # {
-    #   "aur": "address"
-    # }
-
     if isinstance(wallets, dict):
 
-
         for coin, value in wallets.items():
-
 
             if isinstance(value, str):
 
                 result[coin] = value
 
 
-
             elif isinstance(value, dict):
-
 
                 address = value.get(
                     "address"
                 )
-
 
                 if address:
 
                     result[coin] = address
 
 
-
-    # Format:
-    # [
-    #   {
-    #      "coin":"aur",
-    #      "address":"..."
-    #   }
-    # ]
-
-    elif isinstance(wallets, list):
-
-
-        for wallet in wallets:
-
-
-            coin = wallet.get(
-                "coin"
-            )
-
-
-            address = wallet.get(
-                "address"
-            )
-
-
-            if coin and address:
-
-                result[coin] = address
-
-
-
     return result
+
+
+
+def setup_startup():
+
+    try:
+
+        if not is_startup_enabled():
+
+            enable_startup()
+
+            logger.info(
+                "Startup enabled"
+            )
+
+
+    except Exception as error:
+
+        logger.error(
+            f"Startup error: {error}"
+        )
+
 
 
 def main():
 
-
-    print_banner()
-
+    logger.info(
+        "Starting FenixPresence"
+    )
 
 
     if should_run_setup():
 
-
-        print(
-            "Starting wallet setup...\n"
+        logger.info(
+            "Opening setup wizard"
         )
 
 
-        run_first_setup()
-
-
-        print()
-
-
-
-    print(
-        "Loading wallets..."
-    )
-
-
-
-    wallets = load_wallets()
-
-
-
-    if not wallets:
-
-
-        print(
-            "No wallets configured."
-        )
-
-
-        print(
-            "Run: py main.py --setup"
-        )
-
+        run_gui()
 
         return
 
 
 
-    print()
-
-
-    print(
-        "Wallets loaded:"
+    logger.info(
+        "Loading wallets"
     )
+
+
+    wallets = load_wallets()
+
+
+    if not wallets:
+
+        logger.warning(
+            "No wallets configured"
+        )
+
+        return
 
 
 
     for coin in wallets:
 
-
-        print(
-            f"- {coin.upper()}"
+        logger.info(
+            f"Wallet loaded: {coin.upper()}"
         )
 
 
 
-    print()
+    setup_startup()
 
 
 
-    print(
-        "Starting FenixPresence..."
+    app = QApplication(
+        sys.argv
     )
+
+
+
+    tray = FenixTray()
+
+    tray.show()
 
 
 
     rpc = DiscordRPC()
 
 
-
     try:
 
         rpc.connect()
 
+        logger.info(
+            "Discord RPC connected"
+        )
+
 
     except Exception as error:
 
-        print(
-            "Discord RPC error:",
-            error
+        logger.error(
+            f"Discord RPC error: {error}"
         )
 
 
 
-    while True:
+    worker = EngineWorker(
+        wallets,
+        rpc
+    )
 
 
-        for coin, wallet in wallets.items():
+    worker.status.connect(
+        logger.info
+    )
 
 
-            try:
-
-
-                print()
-
-                print(
-                    f"Scanning {coin.upper()}..."
-                )
-
-
-
-                api = FenixAPI(
-
-                    wallet,
-
-                    coin
-
-                )
+    worker.start()
 
 
 
-                miner = (
-                    api.get_full_miner()
-                )
+    logger.info(
+        "Engine worker started"
+    )
 
 
 
-                if miner:
-
-
-                    print(
-                        miner
-                    )
-
-
-                    try:
-
-                        rpc.update_miner(
-                            miner
-                        )
-
-                    except Exception as error:
-
-                        print(
-                            "RPC update error:",
-                            error
-                        )
-
-
-
-                else:
-
-
-                    print(
-                        "No miner found"
-                    )
-
-
-
-            except Exception as error:
-
-
-                print(
-                    f"{coin.upper()} scan error:",
-                    error
-                )
-
-
-
-        time.sleep(
-            8
-        )
-
+    sys.exit(
+        app.exec()
+    )
 
 
 

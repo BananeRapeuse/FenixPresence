@@ -1,3 +1,4 @@
+from pathlib import Path
 import json
 
 
@@ -7,18 +8,28 @@ class Config:
 
     def __init__(
         self,
-        path="config.json"
+        path
     ):
 
-        self.path = path
+        self.path = Path(
+            path
+        )
 
         self.data = {}
+
 
         self.load()
 
 
 
     def load(self):
+
+        if not self.path.exists():
+
+            self.data = {}
+
+            return
+
 
         with open(
             self.path,
@@ -32,6 +43,27 @@ class Config:
 
 
 
+    def save(self):
+
+        self.path.parent.mkdir(
+            exist_ok=True
+        )
+
+
+        with open(
+            self.path,
+            "w",
+            encoding="utf-8"
+        ) as file:
+
+            json.dump(
+                self.data,
+                file,
+                indent=4
+            )
+
+
+
     def get_wallets(self):
 
         return self.data.get(
@@ -41,20 +73,11 @@ class Config:
 
 
 
-    def get_refresh_time(self):
+    def save_wallets(
+        self,
+        wallets
+    ):
 
-        return self.data.get(
-            "refresh_time",
-            8
-        )
+        self.data["wallets"] = wallets
 
-
-
-    def get_discord_id(self):
-
-        return self.data.get(
-            "discord",
-            {}
-        ).get(
-            "client_id"
-        )
+        self.save()

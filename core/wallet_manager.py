@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 
+
 class WalletManager:
 
 
@@ -10,7 +11,10 @@ class WalletManager:
         file="config/wallets.json"
     ):
 
-        self.file = Path(file)
+        self.file = Path(
+            file
+        )
+
 
         self.file.parent.mkdir(
             parents=True,
@@ -34,13 +38,20 @@ class WalletManager:
                 encoding="utf-8"
             ) as f:
 
-                data = json.load(f)
+                data = json.load(
+                    f
+                )
 
 
-            return data.get(
-                "wallets",
-                []
-            )
+            if isinstance(data, dict):
+
+                return data.get(
+                    "wallets",
+                    []
+                )
+
+
+            return []
 
 
         except (
@@ -85,11 +96,12 @@ class WalletManager:
         coin = coin.upper()
 
 
+
         for wallet in wallets:
 
             if (
-                wallet["coin"] == coin
-                and wallet["address"] == address
+                wallet.get("coin") == coin
+                and wallet.get("address") == address
             ):
 
                 return False
@@ -124,7 +136,7 @@ class WalletManager:
         new_wallets = [
             wallet
             for wallet in wallets
-            if wallet["address"] != address
+            if wallet.get("address") != address
         ]
 
 
@@ -148,7 +160,7 @@ class WalletManager:
         return [
             wallet
             for wallet in self.load()
-            if wallet["coin"] == coin
+            if wallet.get("coin") == coin
         ]
 
 

@@ -25,8 +25,8 @@ class DiscordRPC:
     def load_client_id(self):
 
         path = Path(
-            "config/config.json"
-        )
+    "config/config.json"
+)
 
 
         if not path.exists():

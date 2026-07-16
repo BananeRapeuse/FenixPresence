@@ -138,3 +138,76 @@ def format_block_reward(value, ticker):
     return (
         f"+{float(value):.8f} {ticker.upper()}"
     )
+
+def format_multicoin_hashrate(miners):
+    """
+    Format:
+    ⚡ 3.24 TH/s AUR | 1.43 TH/s BTC
+    """
+
+    result = []
+
+
+    for coin, miner in miners.items():
+
+        result.append(
+            f"{format_hashrate(miner.hashrate)} {coin.upper()}"
+        )
+
+
+    if not result:
+
+        return "No mining activity"
+
+
+    return " | ".join(result)
+
+
+
+def format_multicoin_earned(miners):
+    """
+    Format:
+    💰 35.00056587 AUR | 1.00000000 BTC
+    """
+
+    result = []
+
+
+    for coin, miner in miners.items():
+
+        result.append(
+            f"{format_coin(miner.lifetime_earned, coin.upper())}"
+        )
+
+
+    if not result:
+
+        return "No rewards"
+
+
+    return " | ".join(result)
+
+
+
+def format_multicoin_blocks(miners):
+    """
+    Format:
+    🧱 56 Blocks AUR | 1 Blocks BTC
+    """
+
+    result = []
+
+
+    for coin, miner in miners.items():
+
+        result.append(
+            f"{miner.lifetime_blocks} Blocks {coin.upper()}"
+        )
+
+
+    if not result:
+
+        return "No blocks"
+
+
+    return " | ".join(result)
