@@ -68,8 +68,8 @@ Any contribution, feedback, or idea is welcome.
 
 ## Optimizations
 
-- [ ] Launch automatically at computer startup
+- [x] Launch automatically at computer startup
 
-- [ ] Optimize CPU, RAM, and network usage
+- [x] Optimize CPU, RAM, and network usage
 
-- [ ] Make the software compilable into standalone applications
+- [x] Make the software compilable into standalone applications
